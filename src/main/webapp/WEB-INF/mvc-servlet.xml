@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 这个文件如同一个标准的spring.xml配置文件 -->
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.springframework.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+						http://www.springframework.org/schema/beans/spring-beans-4.3.2.xsd
+						http://www.springframework.org/schema/context
+						http://www.springframework.org/schema/context/spring-context-4.3.2.xsd
+						http://www.springframework.org/schema/tx
+						http://www.springframework.org/schema/tx/spring-tx-4.3.2.xsd
+						http://www.springframework.org/schema/aop
+						http://www.springframework.org/schema/aop/spring-aop-4.3.2.xsd
+						http://www.springframework.org/schema/mvc
+						http://www.springframework.org/schema/mvc/spring-mvc-4.3.2.xsd
+						">
+	
+	
+	<!-- 静态资源映射 -->
+    <mvc:resources mapping="/img/**" location="/WEB-INF/imgs/"/>
+	
+	
+	<!-- 注解扫描器 -->
+	<context:component-scan base-package="cn"></context:component-scan>
+	
+	<!-- 自定义验证器，手工注入国际化 -->
+	<bean id="localValidatorFactoryBean" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+		<property name="validationMessageSource" ref="messageSource"></property>
+	</bean>
+	<!-- springmvc配置拦截，所有资源都被拦截，图片无法展示，将除控制层以外的资源交回给servlet处理 -->
+	<mvc:default-servlet-handler/>
+	<!-- 将springmvc注解的action交给springmvc处理 -->
+	<mvc:annotation-driven validator="localValidatorFactoryBean"></mvc:annotation-driven>
+
+
+	<!-- 配置视图解析器，就可以省略前缀和后缀。  prefix：前缀，suffix：后缀-->
+<!-- 	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/"></property>
+		<property name="suffix" value=".jsp"></property>	
+	</bean> -->
+	
+
+	<!-- 启用文件上传 -->
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultiparResolver">
+		<!-- 限制文件上传大小为5M -->
+		<property name="maxUploadSize" value="5242800"></property>
+	</bean>
+	
+	
+	<!-- 
+	该拦截器用于拦截url上的参数。
+	只是当jsp经过action之后，才会将当前的国家和语言存储在session中，同时从session中获取。
+	-->
+	<mvc:interceptors>
+		<bean id="localeChangeInterceptor" class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+			<!-- 默认使用locale，如果自己定义了就使用定义的 -->
+			<property name="paramName" value="locale"></property>
+		</bean>
+		
+		<mvc:interceptor>
+			<!-- path="/**"是拦截所有的action -->
+			<mvc:mapping path="/inter"/>
+			<bean class="cn.et.springmvc.lesson05.MyInteractor"></bean>
+		</mvc:interceptor>
+		
+		<!-- 重复提交的拦截器 -->
+		<mvc:interceptor>
+			<mvc:mapping path="/tm" />
+			<bean class="cn.et.springmvc.lesson05.TokenInteractor"></bean>
+		</mvc:interceptor>
+		
+	</mvc:interceptors>
+	
+	
+	<!-- 
+	参数需要被临时存储在某个地方，当用户再次访问，使用之前设置的参数
+	默认是不存的，定了这个bean就会去取这个localeResolver
+	 -->
+	<bean id="localeResolver" class="org.springfrmamework.web.servlet.i18n.SessionLocaleResolver"></bean>
+	
+	
+	<!-- 连接数据库 -->
+	<context:property-placeholder location="classpath:/jdbc.properties"/>
+	<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="url" value="${url}"></property>
+		<property name="username" value="${username1}"></property>	
+		<property name="password" value="${password2}"></property>
+		<property name="dirverClassName" value="${driverClass}"></property>
+	</bean>
+	
+	
+</beans>
